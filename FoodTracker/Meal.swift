@@ -8,17 +8,15 @@
 
 import UIKit
 
-class Meal: NSObject, NSCoding {
+class Meal: NSObject {
 
-    
     // MARK: Properties
     
     var name: String
     var photo: UIImage?
     var address: String?
     var rating: Int
-    
-    
+
     // MARK: Archiving Paths
     
     static let DocumentsDirectory = NSFileManager().URLsForDirectory(.DocumentDirectory, inDomains: .UserDomainMask).first!
@@ -36,28 +34,16 @@ class Meal: NSObject, NSCoding {
     // MARK: Initialization
     
     init?(name: String, photo: UIImage?, rating: Int, address: String?) {
-        
         // Initialize stored properties.
         self.name = name
         self.photo = photo
         self.rating = rating
         self.address = address
-        
         super.init()
-        
         // Initialization should fail if there is no name or if the rating is negative.
         if name.isEmpty || rating < 0 {
             return nil
         }
-    }
-    
-    // MARK: NSCoding
-    
-    func encodeWithCoder(aCoder: NSCoder) {
-        aCoder.encodeObject(name, forKey: PropertyKey.nameKey)
-        aCoder.encodeObject(photo, forKey: PropertyKey.photoKey)
-        aCoder.encodeInteger(rating, forKey: PropertyKey.ratingKey)
-        aCoder.encodeObject(address, forKey: PropertyKey.addressKey)
     }
     
     required convenience init?(coder aDecoder: NSCoder) {
@@ -70,6 +56,17 @@ class Meal: NSObject, NSCoding {
         // Must call designated initializer.
         self.init(name: name, photo: photo, rating: rating, address:address)
     }
-    
+}
+
+// MARK: - NSCoding
+
+extension Meal: NSCoding {
+
+    func encodeWithCoder(aCoder: NSCoder) {
+        aCoder.encodeObject(name, forKey: PropertyKey.nameKey)
+        aCoder.encodeObject(photo, forKey: PropertyKey.photoKey)
+        aCoder.encodeInteger(rating, forKey: PropertyKey.ratingKey)
+        aCoder.encodeObject(address, forKey: PropertyKey.addressKey)
+    }
 }
 

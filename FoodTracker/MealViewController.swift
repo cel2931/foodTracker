@@ -9,19 +9,15 @@
 import UIKit
 
 protocol MealViewControllerDelegate {
-    func deleteSelectedMeal(selectedMeal :Meal)
+    func deleteSelectedMeal(selectedMeal: Meal)
 }
 
-class MealViewController: UIViewController, UITextFieldDelegate, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
-    
+class MealViewController: UIViewController, UINavigationControllerDelegate {
     var delegate = MealViewControllerDelegate?()
-    
     override func viewDidLoad() {
         super.viewDidLoad()
-        
         // Handle the text field’s user input through delegate callbacks.
         nameTextField.delegate = self
-        
         // Set up views if editing an existing Meal.
         if let meal = meal {
             navigationItem.title = meal.name
@@ -29,12 +25,9 @@ class MealViewController: UIViewController, UITextFieldDelegate, UIImagePickerCo
             photoImageView.image = meal.photo
             ratingControl.rating = meal.rating
         }
-        
         // Enable the Save button only if the text field has a valid Meal name.
         checkValidMealName()
-        
-        NSNotificationCenter.defaultCenter().addObserver(self, selector:#selector(MealViewController.dismissAddNewMealView), name:
-            UIApplicationWillResignActiveNotification, object: nil)
+        NSNotificationCenter.defaultCenter().addObserver(self, selector:#selector(MealViewController.dismissAddNewMealView), name: UIApplicationWillResignActiveNotification, object: nil)
     }
 
     // MARK: Properties
@@ -51,26 +44,18 @@ class MealViewController: UIViewController, UITextFieldDelegate, UIImagePickerCo
      or constructed as part of adding a new meal.
      */
     var meal: Meal?
-    
-    /*
-     This value is either passed by 'MealTableViewController' in 'prepareForSegue(_:sender:)'
-     or constructed as part of adding a new meal.
-     */
     var restaurant: Restaurant?
 
     // MARK: Navigation
     @IBAction func cancel(sender: UIBarButtonItem) {
-        
         // Depending on style of presentation (modal or push presentation), this view controller needs to be dismissed in two different ways.
         let isPresentingInAddMealMode = presentingViewController is UINavigationController
-        
         if isPresentingInAddMealMode {
             dismissViewControllerAnimated(true, completion: nil)
         } else {
             navigationController!.popViewControllerAnimated(true)
         }
     }
-    
     // This method lets you configure a view controller before it's presented.
     override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
         if saveButton === sender {
@@ -78,15 +63,12 @@ class MealViewController: UIViewController, UITextFieldDelegate, UIImagePickerCo
             let photo = photoImageView.image
             let rating = ratingControl.rating
             let address = restAddress.text
-            
-            
             // Set the meal to be passed to MealTableViewController after the unwind segue.
             meal = Meal(name: name, photo: photo, rating: rating, address: address)
         }
     }
     
     @IBAction func unwindToMealDetail(sender: UIStoryboardSegue) {
-        
         if let sourceViewController = sender.sourceViewController as? MapViewController, restaurant = sourceViewController.restaurantAnotation {
             let selectedAddress = self.prettyPrint(restaurant)
             if !selectedAddress.isEmpty {
@@ -96,7 +78,6 @@ class MealViewController: UIViewController, UITextFieldDelegate, UIImagePickerCo
     }
     
     func dismissAddNewMealView() {
-        
         let isPresentingInAddMealMode = presentingViewController is UINavigationController
         if isPresentingInAddMealMode {
             self.dismissViewControllerAnimated(true, completion: {})
@@ -108,38 +89,52 @@ class MealViewController: UIViewController, UITextFieldDelegate, UIImagePickerCo
     @IBAction func selectImageFromPhotoLibrary(sender: UITapGestureRecognizer) {
         // Hide the keyboard
         nameTextField.resignFirstResponder()
-        
         // UIImagePickerController is a view controller that lets a user pick media from their photo library.
         let imagePickerController = UIImagePickerController()
-        
         // Only allow photos to be picked, not taken.
         imagePickerController.sourceType = .PhotoLibrary
-        
         // Make sure ViewController is notified when the user picks an image.
         imagePickerController.delegate = self
-        
         presentViewController(imagePickerController, animated: true, completion: nil)
     }
     
-    // MARK: UIImagePickerControllerDelegate
+    // MARK: - 3D touch Peeking/Popping actions
     
-    func imagePickerControllerDidCancel(picker: UIImagePickerController) {
-        // Dismiss the picker if the user canceled.
-        dismissViewControllerAnimated(true, completion: nil)
+   override func previewActionItems() -> [UIPreviewActionItem] {
+        return [UIPreviewAction(title: "Delete",
+                                style: .Destructive,
+                                handler:  {
+            (action, viewController) in (viewController as? MealViewController)?.deleteMeal(self.meal!)
+        })]
     }
     
-    func imagePickerController(picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [String : AnyObject]) {
-        // The info dictionary contains multiple representations of the image, and this uses the original.
-        let selectedImage = info[UIImagePickerControllerOriginalImage] as! UIImage
-        
-        // Set photoImageView to display the selected image.
-        photoImageView.image = selectedImage
-        
-        // Dismiss the picker.
-        dismissViewControllerAnimated(true, completion: nil)
+    func deleteMeal(selectedMeal: Meal) {
+        self.delegate?.deleteSelectedMeal(selectedMeal)
     }
+
+    // MARK: Label Helper
     
-    // MARK: UITextFieldDelegate
+    func prettyPrint(restaurant: Restaurant) -> String {
+        var newAddress: String = ""
+        if let street = restaurant.street {
+            newAddress += street + ", "
+        }
+        if let zipCode = restaurant.zip {
+            newAddress += zipCode + "\n"
+        }
+        if let city = restaurant.city {
+            newAddress += city + ", "
+        }
+        if let country = restaurant.country {
+            newAddress += country    
+        }
+        return newAddress
+    }
+}
+
+// MARK: - UITextFieldDelegate
+
+extension MealViewController: UITextFieldDelegate {
     
     func textFieldShouldReturn(textField: UITextField) -> Bool {
         textField.resignFirstResponder()
@@ -161,45 +156,24 @@ class MealViewController: UIViewController, UITextFieldDelegate, UIImagePickerCo
         let text = nameTextField.text ?? ""
         saveButton.enabled = !text.isEmpty
     }
-    
-    
-    // MARK: - 3D touch Peeking/Popping actions
-    
-   override func previewActionItems() -> [UIPreviewActionItem] {
-        
-        return [UIPreviewAction(title: "Delete",
-                                style: .Destructive,
-                                handler:  {
-            (action, viewController) in (viewController as? MealViewController)?.deleteMeal(self.meal!)
-        })]
-    }
-    
-    func deleteMeal(selectedMeal: Meal) {
-        self.delegate?.deleteSelectedMeal(selectedMeal)
-    }
+}
 
-    // MARK: Label Helper
+// MARK: - UIImagePickerControllerDelegate
+
+extension MealViewController: UIImagePickerControllerDelegate {
+
+    func imagePickerControllerDidCancel(picker: UIImagePickerController) {
+        // Dismiss the picker if the user canceled.
+        dismissViewControllerAnimated(true, completion: nil)
+    }
     
-    func prettyPrint(restaurant: Restaurant) -> String {
-        
-        var newAddress: String = ""
-        if let street = restaurant.street {
-            newAddress += street + ", "
-        }
-        
-        if let zipCode = restaurant.zip {
-            newAddress += zipCode + "\n"
-            
-        }
-        if let city = restaurant.city {
-            newAddress += city + ", "
-            
-        }
-        if let country = restaurant.country {
-            newAddress += country
-            
-        }
-        return newAddress
+    func imagePickerController(picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [String: AnyObject]) {
+        // The info dictionary contains multiple representations of the image, and this uses the original.
+        let selectedImage = info[UIImagePickerControllerOriginalImage] as! UIImage
+        // Set photoImageView to display the selected image.
+        photoImageView.image = selectedImage
+        // Dismiss the picker.
+        dismissViewControllerAnimated(true, completion: nil)
     }
 }
 
