@@ -2,7 +2,7 @@
 
 ## Description
 
-`fancyLaunch` is a Swift project that was created to practice 3D touch handling and the swift syntax itself. 
+`foodTracker` is a Swift project that was created to practice 3D touch handling and the swift syntax itself. 
 
 This app main aim is to provide the user with an option to store his/hers favorite meals, so:
 - It allows loading an image per meal, from the phone library.
